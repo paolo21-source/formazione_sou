@@ -1,0 +1,14 @@
+- name: Install pip for Python3
+  dnf:
+    name: python3-pip
+    state: present
+
+- name: Install Python requests module
+  pip:
+    name: requests
+    executable: pip3
+
+- name: Install Python docker module (optional, if needed)
+  pip:
+    name: docker
+    executable: pip3

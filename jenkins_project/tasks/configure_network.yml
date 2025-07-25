@@ -1,0 +1,8 @@
+- name: Create Docker network for Jenkins
+  docker_network:
+    name: jenkins_net
+    driver: bridge
+    ipam_config:
+      - subnet: 172.25.0.0/24
+        gateway: 172.25.0.1
+    state: present

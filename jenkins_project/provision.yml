@@ -1,0 +1,14 @@
+- hosts: all
+  become: true
+  vars:
+    docker_network_name: jenkins_net
+    docker_network_subnet: 172.25.0.0/16
+    jenkins_master_ip: 172.25.0.10
+    jenkins_agent_ip: 172.25.0.11
+    jenkins_agent_secret: "inserisci-qui-il-token-segreto"
+  tasks:
+    - import_tasks: tasks/setup_system.yml
+    - import_tasks: tasks/install_docker.yml
+    - import_tasks: tasks/configure_network.yml
+    - import_tasks: tasks/jenkins_master.yml
+    - import_tasks: tasks/jenkins_agent.yml

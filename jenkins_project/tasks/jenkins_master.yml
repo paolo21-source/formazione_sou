@@ -1,0 +1,19 @@
+- name: Pull Jenkins image
+  docker_image:
+    name: jenkins/jenkins:lts
+    source: pull
+
+- name: Run Jenkins master container
+  docker_container:
+    name: jenkins-master
+    image: jenkins/jenkins:lts
+    state: started
+    restart_policy: always
+    ports:
+      - "8081:8080"
+      - "50000:50000"
+    networks:
+      - name: "{{ docker_network_name }}"
+        ipv4_address: "{{ jenkins_master_ip }}"
+    volumes:
+      - /var/jenkins_home
