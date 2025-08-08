@@ -1,0 +1,50 @@
+- name: Configura limits.conf e access.conf per utenti specifici
+  hosts: localhost
+  become: true
+  connection: local
+  vars:
+    utenti:
+      - nome: pippo
+        ambiente: produzione
+        limitemax: 1000
+      - nome: paolo
+        ambiente: sviluppo
+        limitemax: 10000
+      - nome: gabriele 
+        ambiente: collaudo 
+        limitemax: 10000
+
+  tasks:
+    - name: Aggiungi hard limit a /etc/security/limits.conf
+      lineinfile:
+        path: /etc/security/limits.conf
+        create: yes 
+        insertafter: EOF
+        line: "{{ item.nome }} hard nofile {{ item.limitemax }}"
+        state: present 
+      loop: "{{ utenti }}"
+
+    - name: Aggiungi soft limit a /etc/security/limits.conf
+      lineinfile:
+        path: /etc/security/limits.conf
+        create: yes
+        insertafter: EOF
+        line: "{{ item.nome }} soft nofile {{ item.limitemax }}"
+        state: present
+      loop: "{{ utenti }}"
+    - name: (TEST) Creazione access.conf finto con riga di blocco finale
+      copy:
+        dest: /tmp/access.conf
+        content: |
+          - : ALL : ALL
+
+    - name: Inserisci whitelist utenti prima della regola di blocco
+      blockinfile:
+        path: /tmp/access.conf  
+        marker: "# {mark} ANSIBLE-WHITELIST"
+        block: |
+          {% for item in utenti %}
+          + : {{ item.nome }} : ALL
+          {% endfor %}
+        insertbefore: '^- : ALL : ALL'
+   
