@@ -1,0 +1,44 @@
+---
+- hosts: all
+  become: true
+
+
+  vars:
+    site_name: "sito"
+    server_name: "sito.local"
+    document_root: "/var/www/sito"
+    port: 80
+
+  tasks:
+    - name: Installare Apache
+      apt:
+        name: apache2
+        state: present
+        update_cache: yes
+
+    - name: Creare document root
+      file:
+        path: "{{ document_root }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '2755'
+    - name: Creare index.html di test 
+      copy:
+        dest: "{{ document_root }}/index.html"
+        content: "<h1>Benvenuto su {{ server_name }}</h1>"
+
+    - name: Creare VirtualHost da template 
+      template:
+        src: "host.conf.j2" 
+        dest: "/etc/apache2/sites-available/{{ site_name }}.conf"
+
+    - name: Abilitare sito
+      command: "a2ensite {{ site_name }}.conf"
+      notify: Riavvia Apache
+  handlers:
+    - name: Riavvia Apache
+      service:
+        name: apache2 
+        state: restarted
+    
