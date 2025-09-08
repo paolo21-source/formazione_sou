@@ -1,0 +1,3 @@
+container_engine: docker   # docker o podman
+registry_name: local_registry
+registry_port: 5001

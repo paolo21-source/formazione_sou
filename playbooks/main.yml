@@ -1,0 +1,8 @@
+---
+- name: Setup registry, build images, and run SSH containers
+  hosts: localhost
+
+  roles:
+    - registry
+    - build_images
+    - run_containers

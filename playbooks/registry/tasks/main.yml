@@ -1,0 +1,27 @@
+- name: Check if Docker is installed
+  command: docker --version
+  register: docker_check
+  ignore_errors: yes
+
+- name: Check if Podman is installed
+  command: podman --version
+  register: podman_check
+  ignore_errors: yes
+
+- name: Set facts
+  set_fact:
+    docker_installed: "{{ docker_check.rc == 0 }}"
+    podman_installed: "{{ podman_check.rc == 0 }}"
+
+- name: Fail if no container engine is available
+  fail:
+    msg: "Neither Docker nor Podman is installed."
+  when: not docker_installed and not podman_installed
+
+- name: Run local registry
+  community.docker.docker_container:
+    name: "{{ registry_name }}"
+    image: registry:2
+    state: started
+    published_ports:
+      - "{{ registry_port }}:5001"
