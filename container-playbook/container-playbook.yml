@@ -1,0 +1,37 @@
+---
+- name: Setup di un Docker Registry locale e test con hello-world
+  hosts: all
+  tasks:
+    # Scarico l'immagine ufficiale di Docker Registry
+    - name: Pull Docker Registry image
+      docker_image:
+        name: registry
+        tag: "2"
+        source: pull
+        state: present
+
+    # Avvio il container del registry
+    - name: Avvio Docker Registry container
+      docker_container:
+        name: registry
+        image: registry:2
+        ports:
+          - "5000:5000"
+        restart_policy: always
+        state: started
+
+    # --- TEST hello-world ---
+    # Scarico l'immagine hello-world
+    - name: Pull hello-world image
+      docker_image:
+        name: hello-world
+        source: pull
+        state: present
+
+    # Avvio il container hello-world
+    - name: Run hello-world container
+      docker_container:
+        name: hello-world-container
+        image: hello-world
+        state: started
+        auto_remove: true   # il container si rimuove da solo dopo l'esecuzione
