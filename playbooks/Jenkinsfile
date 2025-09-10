@@ -1,0 +1,43 @@
+pipeline {
+    agent any
+    environment {
+        registry = "localhost:5050"
+        registryCredential = 'docker-creds'
+        dockerImage = "ubuntu-ssh"
+        buildTag = "${env.BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Build Image') {
+            steps {
+                script {
+                    // Assicurati di avere un Dockerfile nella stessa cartella
+                    docker.build("${registry}/${dockerImage}:${buildTag}")
+                }
+            }
+        }
+
+        stage('Push Image') {
+            steps {
+                script {
+                    docker.withRegistry("http://${registry}", registryCredential) {
+                        docker.image("${registry}/${dockerImage}:${buildTag}").push()
+                    }
+                }
+            }
+        }
+
+        stage('Deploy with Ansible') {
+            steps {
+                script {
+                    // Assicurati di avere il plugin Ansible installato
+                    ansiblePlaybook(
+                        playbook: 'deploy.yml',
+                        inventory: 'localhost,',
+                        extras: "-e build_number=${buildTag}"
+                    )
+                }
+            }
+        }
+    }
+}

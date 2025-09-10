@@ -1,0 +1,39 @@
+# 🔐 Registry Configuration
+registry:
+  name: "registry"
+  port: 5050
+  url: "localhost:5050"
+  storage_path: "~/registry-data"
+  username: "admin"
+  password: "admin123"
+
+# 🛠 Jenkins Configuration
+jenkins:
+  image_name: "jenkins-custom"
+  container_name: "jenkins"
+  ssh_port: 2224
+  docker_port: 50000
+  web_port: 8080
+  volume_name: "jenkins_data"
+
+# 📦 Build & Deploy
+build_number: "1"
+ssh_user: "jenkins"
+ssh_public_key: "{{ lookup('file', 'files/id_rsa.pub') }}"
+ansible_network: "ansible-net"
+
+# 🐳 Docker Images to Build
+images:
+  - name: "ubuntu-ssh"
+    dockerfile: "Dockerfile.ubuntu"
+  - name: "debian-ssh"
+    dockerfile: "Dockerfile.debian"
+
+# 🚀 Containers to Run
+containers:
+  - name: "ubuntu-container"
+    port: 2222
+    image: "ubuntu-ssh"
+  - name: "debian-container"
+    port: 2223
+    image: "debian-ssh"

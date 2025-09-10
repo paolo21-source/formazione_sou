@@ -1,0 +1,90 @@
+<flow-definition plugin="workflow-job">
+  <description>Pipeline Docker e Ansible</description>
+  <keepDependencies>false</keepDependencies>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
+    <script>
+pipeline {
+    agent any
+    environment {
+        registry = "localhost:5050"
+        dockerImage = "ubuntu-ssh"
+        buildTag = "${env.BUILD_NUMBER}"
+        projectPath = "/var/jenkins_home/project-files/"  // Percorso permanente
+    }
+
+    stages {
+        stage('Verify Files') {
+            steps {
+                script {
+                    // Verifica che i file esistano nel percorso permanente
+                    sh """
+                        echo "Verifica file in ${projectPath}:"
+                        ls -la ${projectPath} || echo "Directory non trovata"
+                        
+                        if [ ! -f "${projectPath}Dockerfile.ubuntu" ]; then
+                            error "ERRORE: Dockerfile.ubuntu non trovato in ${projectPath}"
+                        fi
+                        
+                        echo "File verificati con successo!"
+                    """
+                }
+            }
+        }
+
+        stage('Build Image') {
+            steps {
+                script {
+                    // Build direttamente dalla cartella permanente
+                    sh "docker build -t ${registry}/${dockerImage}:${buildTag} -f ${projectPath}Dockerfile.ubuntu ${projectPath}"
+                }
+            }
+        }
+
+        stage('Push Image') {
+            steps {
+                script {
+                    sh "docker push ${registry}/${dockerImage}:${buildTag}"
+                    sh "curl http://${registry}/v2/_catalog"
+                }
+            }
+        }
+
+        stage('Deploy with Ansible') {
+            steps {
+                script {
+                    // Se hai un playbook Ansible nella stessa cartella
+                    sh """
+                        if [ -f "${projectPath}deploy.yml" ]; then
+                            cd ${projectPath}
+                            ansible-playbook -i localhost, deploy.yml -e build_number=${buildTag}
+                        else
+                            echo "Nessun playbook Ansible trovato, salto il deployment"
+                        fi
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline completata - Build: ${buildTag}"
+            // Pulizia opzionale delle immagini Docker
+            sh "docker image rm ${registry}/${dockerImage}:${buildTag} 2>/dev/null || true"
+        }
+        
+        success {
+            echo "✅ SUCCESSO: Pipeline completata!"
+            sh "echo 'Immagine creata: ${registry}/${dockerImage}:${buildTag}'"
+        }
+        
+        failure {
+            echo "❌ FALLIMENTO: Pipeline fallita!"
+        }
+    }
+}
+    </script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+</flow-definition>
