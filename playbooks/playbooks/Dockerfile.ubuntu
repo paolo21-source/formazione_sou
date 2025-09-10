@@ -1,0 +1,31 @@
+FROM ubuntu:24.04
+
+# Aggiorna e installa SSH e sudo
+RUN apt-get update && \
+    apt-get install -y openssh-server sudo && \
+    mkdir /var/run/sshd
+
+# Crea l'utente devuser con home e shell bash
+RUN useradd -m -s /bin/bash devuser && \
+    echo 'devuser ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+
+
+# Crea la cartella .ssh nella home dell'utente
+RUN mkdir -p /home/devuser/.ssh && \
+    chown -R devuser:devuser /home/devuser && \
+    chmod 700 /home/devuser/.ssh
+
+# Copia la chiave pubblica nell'authorized_keys
+COPY files/id_rsa.pub /home/devuser/.ssh/authorized_keys
+RUN chown devuser:devuser /home/devuser/.ssh/authorized_keys && \
+    chmod 600 /home/devuser/.ssh/authorized_keys
+
+# Configura sshd per consentire login con chiave
+RUN sed -i 's/^#PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's|^#AuthorizedKeysFile.*|AuthorizedKeysFile .ssh/authorized_keys|' /etc/ssh/sshd_config && \
+    sed -i 's/^#PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+
+EXPOSE 22
+
+CMD ["/usr/sbin/sshd","-D"]

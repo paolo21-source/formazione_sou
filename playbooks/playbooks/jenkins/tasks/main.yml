@@ -1,0 +1,81 @@
+- name: Build Jenkins image
+  community.docker.docker_image:
+    name: jenkins-custom
+    source: build
+    build:
+      path: jenkins/files
+      dockerfile: "Dockerfile.jenkins"
+
+- name: Create Jenkins volume
+  community.docker.docker_volume:
+    name: jenkins_data
+    state: present
+
+- name: Create Docker network
+  community.docker.docker_network:
+    name: ansible-net
+    state: present
+  
+- name: Run Jenkins container
+  community.docker.docker_container:
+    name: jenkins
+    image: jenkins-custom
+    state: started
+    restart_policy: always
+    published_ports:
+      - "8080:8080"
+      - "50000:50000"
+      - "2224:22"
+    volumes:
+      - "jenkins_data:/var/jenkins_home"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "/Users/pcpaolo/Desktop/playbooks:/var/jenkins_home/playbooks"
+    privileged: true
+    networks:
+      - name: ansible-net
+
+- name: Wait for Jenkins to be ready
+  uri:
+    url: "http://127.0.0.1:8080/login"
+    method: GET
+    status_code: 200
+    return_content: yes
+  register: jenkins_ready
+  retries: 10
+  delay: 5
+  until: jenkins_ready.status == 200
+
+- name: Get Jenkins crumb
+  uri:
+    url: "http://127.0.0.1:8080/crumbIssuer/api/json"
+    method: GET
+    user: "paolo"
+    password: "111ccf76aba3b3e781ac7a0e145ff00d7a"
+    force_basic_auth: yes
+    return_content: yes
+    status_code: 200
+  register: crumb_response
+
+
+- name: Create Jenkins job without jq
+  block:
+    - name: Get Jenkins crumb (without jq)
+      shell: |
+        curl -s -u paolo:111ccf76aba3b3e781ac7a0e145ff00d7a \
+             http://127.0.0.1:8080/crumbIssuer/api/json | grep -o '"crumb":"[^"]*"' | cut -d'"' -f4
+      register: jenkins_crumb
+      changed_when: false
+
+    - debug:
+        var: jenkins_crumb.stdout
+
+    - name: Create Jenkins job
+      shell: |
+        curl -u paolo:111ccf76aba3b3e781ac7a0e145ff00d7a \
+             -H "Jenkins-Crumb: {{ jenkins_crumb.stdout }}" \
+             -H "Content-Type: application/xml" \
+             -X POST \
+             --data-binary @jenkins/files/jenkins_job_config.xml \
+             http://127.0.0.1:8080/createItem?name=auto-pipeline
+      args:
+        chdir: "{{ playbook_dir }}"

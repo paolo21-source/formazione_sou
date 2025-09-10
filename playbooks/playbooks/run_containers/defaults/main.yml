@@ -1,0 +1,13 @@
+container_engine: podman   # docker o podman
+ssh_user: devuser
+pubkey_file: ./files/id_rsa.pub
+
+containers:
+  - name: ubuntu-ssh
+    image: ubuntu-ssh
+    dockerfile: ./playbooks/Dockerfile.ubuntu
+    port: 2225
+  - name: debian-ssh
+    image: debian-ssh
+    dockerfile: ./playbooks/Dockerfile.debian
+    port: 2226 

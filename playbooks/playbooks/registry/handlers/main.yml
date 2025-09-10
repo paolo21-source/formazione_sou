@@ -1,0 +1,11 @@
+- name: restart registry
+  community.docker.docker_container:
+    name: "{{ registry_name }}"
+    state: restarted
+  when: docker_installed
+
+- name: restart podman registry
+  containers.podman.podman_container:
+    name: "{{ registry_name }}"
+    state: restarted
+  when: podman_installed and not docker_installed
