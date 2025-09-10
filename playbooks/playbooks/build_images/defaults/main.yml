@@ -1,7 +1,0 @@
-container_engine: podman   # docker o podman
-
-containers:
-  - name: ubuntu-ssh
-    dockerfile: ./playbooks/Dockerfile.ubuntu
-  - name: debian-ssh
-    dockerfile: ./playbooks/Dockerfile.debian

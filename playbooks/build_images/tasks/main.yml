@@ -1,7 +1,0 @@
-- name: Build SSH images
-  community.docker.docker_image:
-    name: "{{ item.name }}"
-    build:
-      path: "{{ item.dockerfile | dirname }}"
-    source: build
-  loop: "{{ containers }}"
